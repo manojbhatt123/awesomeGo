@@ -7,9 +7,13 @@ import (
 	"strings"
 	"time"
 
-	dps "github.com/araddon/dateparse"
+	log "awesomeGo/logging"
+
 	"github.com/gosimple/slug"
+	dps "github.com/markusmobius/go-dateparser"
 )
+
+var logger = log.New()
 
 // add your db pipeline
 type SnapshotData struct {
@@ -34,12 +38,17 @@ func addOrUpdateRecord(data []map[string]string, statusCode int, col *Column) {
 		sqlStr := "INSERT INTO publications_rsssnapshot(url, rss_feed_id, data, created_on, updated_on, enrich_status, translation_status, status) VALUES "
 		storyUrl := row["url"]
 		title := row["title"]
-		pubDate := "December 2011"
+		pubDate := row["pubDate"]
 		if pubDate != "" {
-			parsedPubDate, _ := dps.ParseAny(pubDate)
-			archiveDayRange := now.AddDate(0, 0, -col.archive_day_range)
-			if parsedPubDate.Before(archiveDayRange) {
-				fmt.Println("date1 is before date2: ", pubDate, parsedPubDate, archiveDayRange)
+			// parsedPubDate, _ := dps.Parse(nil, pubDate, "02 January 2006")
+			// archiveDayRange := now.AddDate(0, 0, -col.archive_day_range)
+			parsedPubDate, _ := dps.Parse(nil, pubDate, "02 January 2006")
+			archiveDayRange := parsedPubDate.Time.AddDate(0, 0, col.archive_day_range)
+			if archiveDayRange.After(now) {
+				fmt.Println("date1 is before date2: ", archiveDayRange, now)
+			}
+			if archiveDayRange.Before(now) {
+				logger.Info().Println("Date older then archive day range: ", pubDate, parsedPubDate, archiveDayRange, col.archive_day_range)
 				status = 3
 			}
 		}
@@ -59,9 +68,9 @@ func addOrUpdateRecord(data []map[string]string, statusCode int, col *Column) {
 
 		res, err := db.Exec(sqlStr)
 		if err != nil {
-			fmt.Println("Got Error", err)
+			logger.Info().Println("Got Error: ", err)
 		}
-		fmt.Println("###########", res, count)
+		logger.Info().Println("###########", res, count)
 	}
 
 }

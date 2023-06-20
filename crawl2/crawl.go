@@ -91,7 +91,7 @@ func CrawlUrl(col Column, finished chan bool) {
 
 func ProcessData(rows *sql.Rows) {
 	var col Column
-	finished := make(chan bool, 100)
+	finished := make(chan bool, 10)
 	for rows.Next() {
 		rows.Scan(&col.id, &col.rss_url, &col.stories_selector, &col.url_selector, &col.title_selector, &col.pub_date_selector, &col.summary_selector, &col.authors_selector, &col.archive_day_range, &col.req_headers)
 		fmt.Println("Process Data", col.pub_date_selector)
@@ -99,7 +99,7 @@ func ProcessData(rows *sql.Rows) {
 
 	}
 
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 10; i++ {
 		fmt.Println(<-finished)
 	}
 }
